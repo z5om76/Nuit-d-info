@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save the Ocean</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Ocean Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: url("sea.png") no-repeat center center / cover;
+            z-index: -1;
+        }
+
+        /* Fish style */
+        .fish {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background: url("pngegg.png") no-repeat center center / contain;
+            animation: swim infinite ease-in-out;
+        }
+
+        @keyframes swim {
+            0% {
+                transform: translateX(0) translateY(0);
+            }
+            25% {
+                transform: translateX(20px) translateY(15px);
+            }
+            50% {
+                transform: translateX(-20px) translateY(-10px);
+            }
+            75% {
+                transform: translateX(10px) translateY(20px);
+            }
+            100% {
+                transform: translateX(0) translateY(0);
+            }
+        }
+
+        #game-container {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #basket {
+            background: url("poubelle.png") no-repeat center center / contain;
+            width: 120px;
+            height: 120px;
+            position: absolute;
+            bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .garbage {
+            position: absolute;
+            width: 100px;
+            height: 70px;
+            animation: garbageFall linear;
+        }
+
+        @keyframes garbageFall {
+            from { top: -100px; }
+            to { top: 100vh; }
+        }
+
+        #score {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="basket">poubelle</div>
+    <div id="score">Score: 0</div>
+
+    <script>
+        let score = 0;
+        const gameContainer = document.getElementById('game-container');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        let basketX = window.innerWidth / 2;
+        const basketSpeed = 20;
+
+        // Add moving fishes
+        function addFishes() {
+            for (let i = 0; i < 10; i++) {
+                const fish = document.createElement('div');
+                fish.className = 'fish';
+                fish.style.left = Math.random() * window.innerWidth + 'px';
+                fish.style.top = Math.random() * window.innerHeight + 'px';
+                fish.style.animationDuration = Math.random() * 3 + 2 + 's'; // Random swim duration
+                gameContainer.appendChild(fish);
+
+                // Move the fish randomly every few seconds
+                setInterval(() => {
+                    fish.style.left = Math.random() * window.innerWidth + 'px';
+                    fish.style.top = Math.random() * window.innerHeight + 'px';
+                }, Math.random() * 2000 + 1000); // Random interval between 1-2 seconds
+            }
+        }
+
+        addFishes();
+
+        // Move basket with keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                basketX -= basketSpeed;
+                if (basketX < 0) basketX = 0;
+            } else if (e.key === 'ArrowRight') {
+                basketX += basketSpeed;
+                if (basketX > window.innerWidth - 120) basketX = window.innerWidth - 120;
+            }
+            basket.style.left = basketX + 'px';
+        });
+
+        // Move basket with mouse
+        document.addEventListener('mousemove', (e) => {
+            basketX = e.clientX - 60; // Center the basket on mouse
+            if (basketX < 0) basketX = 0;
+            if (basketX > window.innerWidth - 120) basketX = window.innerWidth - 120;
+            basket.style.left = basketX + 'px';
+        });
+
+        // Spawn Garbage
+        function spawnGarbage() {
+            const garbage = document.createElement('div');
+            garbage.className = 'garbage';
+
+            // Randomize garbage image
+            const images = [
+                "bouteillep.png",
+                "sachetp.png"         
+               ];
+            const randomImage = images[Math.floor(Math.random() * images.length)];
+            garbage.style.background = `url("${randomImage}") no-repeat center center / contain`;
+
+            garbage.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+            garbage.style.top = '-70px';
+            gameContainer.appendChild(garbage);
+
+            let garbageY = -70;
+            const gravity = 4;
+
+            const fall = setInterval(() => {
+                garbageY += gravity;
+                garbage.style.top = garbageY + 'px';
+
+                // Collision detection
+                const basketBounds = basket.getBoundingClientRect();
+                const garbageBounds = garbage.getBoundingClientRect();
+
+                if (
+                    garbageBounds.bottom >= basketBounds.top &&
+                    garbageBounds.left < basketBounds.right &&
+                    garbageBounds.right > basketBounds.left
+                ) {
+                    score += 10;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    garbage.remove();
+                    clearInterval(fall);
+                }
+
+                // Remove garbage if it goes off screen
+                if (garbageY > window.innerHeight) {
+                    garbage.remove();
+                    clearInterval(fall);
+                }
+            }, 16);
+        }
+
+        // Drop garbage regularly
+        setInterval(spawnGarbage, 1500);
+    </script>
+</body>
+</html>
